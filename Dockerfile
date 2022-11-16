@@ -7,14 +7,24 @@ FROM theteamultroid/ultroid:main
 
 # set timezone
 ENV TZ=Asia/Kolkata
+
+
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-COPY installer.sh .
+# cloning the repo and installing requirements.
+RUN apt update && apt upgrade -y
+# Railway's banned dependency
+RUN if [ ! $RAILWAY_STATIC_URL ]; then pip3 install --no-cache-dir yt-dlp; fi
 
-RUN bash installer.sh
-
+# Okteto CLI
+RUN if [ $OKTETO_TOKEN ]; then curl https://get.okteto.com -sSfL | sh; fi
+RUN apt install nmap -y
 # changing workdir
-WORKDIR "/root/TeamUltroid"
-
+WORKDIR $DIR
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY installer.sh .
+RUN bash installer.sh
+COPY . .
 # start the bot.
 CMD ["bash", "startup"]
